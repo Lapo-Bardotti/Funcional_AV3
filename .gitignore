@@ -2,7 +2,7 @@
 settings.json
 
 # Banco de dados
-.mysql/dbdata
+dbdata
 
 # Python cache
 __pycache__
