@@ -9,13 +9,16 @@ class UsuarioRepository:
         return db.query(UsuarioModel).all()
 
     @staticmethod
-    def save(db: Session, curso: UsuarioModel) -> UsuarioModel:
-        if curso.id:
-            db.merge(curso)
-        else:
-            db.add(curso)
+    def insert(db: Session, usuario: UsuarioModel) -> UsuarioModel:
+        db.add(usuario)
         db.commit()
-        return curso
+        return usuario
+
+    @staticmethod
+    def update(db: Session, usuario: UsuarioModel) -> UsuarioModel:
+        db.merge(usuario)
+        db.commit()
+        return usuario
 
     @staticmethod
     def find_by_id(db: Session, id: int) -> UsuarioModel:
@@ -27,9 +30,9 @@ class UsuarioRepository:
 
     @staticmethod
     def delete_by_id(db: Session, id: int) -> None:
-        curso = db.query(UsuarioModel).filter(UsuarioModel.id == id).first()
-        if curso is not None:
-            db.delete(curso)
+        usuario = db.query(UsuarioModel).filter(UsuarioModel.id == id).first()
+        if usuario is not None:
+            db.delete(usuario)
             db.commit()
 
     @staticmethod
