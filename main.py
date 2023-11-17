@@ -1,8 +1,10 @@
 import jwt
 from datetime import datetime, timedelta
 
-from fastapi import FastAPI, Depends, status
+from fastapi import FastAPI, Depends, status, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
+import uvicorn
 
 from db import engine, Base, get_db
 from models.UsuarioModel import UsuarioModel
@@ -11,11 +13,36 @@ from repositories.UsuarioRepository import UsuarioRepository
 from schemas.UsuarioSchema import UsuarioAuthRequest, UsuarioInsertRequest, UsuarioUpdateRequest, UsuarioDeleteRequest, UsuarioResponse
 from schemas.AuthRequest import AuthRequest
 
-SECRET_KEY = 'sua_chave_secreta'  # extrair para .env, não seria exatamente necessário neste caso.
+# extrair para .env, não seria exatamente necessário neste caso.
+SECRET_KEY = 'sua_chave_secreta'
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+
+@app.middleware("http")
+async def modify_request_response_middleware(request: Request, call_next):
+    token = request.headers.get('Authorization')
+
+    if request.headers.get('Req-Autenticar'):
+        return await call_next(request)
+
+    if token is None:
+        response = JSONResponse(
+            content={"detail": "Token inexistente"}, status_code=401)
+    else:
+        try:
+            jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+            response = await call_next(request)
+        except jwt.ExpiredSignatureError:
+            response = JSONResponse(
+                content={"detail": "Token expirado"}, status_code=401)
+        except jwt.InvalidTokenError:
+            response = JSONResponse(
+                content={"detail": "Token inválido"}, status_code=401)
+
+    return response
 
 
 @app.post("/usuarios/autenticar/", status_code=status.HTTP_200_OK)
@@ -33,13 +60,15 @@ def autenticar(request: UsuarioAuthRequest, db: Session = Depends(get_db)):
 
 @app.post("/usuarios/cadastrarUsuario/", status_code=status.HTTP_201_CREATED)
 def cadastrarUsuario(request: UsuarioInsertRequest, db: Session = Depends(get_db)):
-    usuario = UsuarioRepository.insert(db, UsuarioModel(**request.model_dump()))
+    usuario = UsuarioRepository.insert(
+        db, UsuarioModel(**request.model_dump()))
     return UsuarioResponse.model_validate(usuario)
 
 
 @app.post("/usuarios/editarUsuario/", status_code=status.HTTP_201_CREATED)
 def editarUsuario(request: UsuarioUpdateRequest, db: Session = Depends(get_db)):
-    usuario = UsuarioRepository.update(db, UsuarioModel(**request.model_dump()))
+    usuario = UsuarioRepository.update(
+        db, UsuarioModel(**request.model_dump()))
     return UsuarioResponse.model_validate(usuario)
 
 
@@ -62,10 +91,12 @@ def testarToken(request: AuthRequest):
 def create_jwt_token(user_id):
     payload = {
         "sub": user_id,
-        "exp": datetime.utcnow() + timedelta(hours=1)
+        "exp": datetime.utcnow() + timedelta(hours=0.5)
     }
-
     token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
-
     return token
     # Lambda para criar o token
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
