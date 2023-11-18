@@ -8,10 +8,14 @@ import uvicorn
 
 from db import engine, Base, get_db
 from models.UsuarioModel import UsuarioModel
+from models.ContaModel import ContaModel
 
 from repositories.UsuarioRepository import UsuarioRepository
 from schemas.UsuarioSchema import UsuarioAuthRequest, UsuarioInsertRequest, UsuarioUpdateRequest, UsuarioDeleteRequest, UsuarioResponse
-from schemas.AuthRequest import AuthRequest
+
+from repositories.ContaRepository import ContaRepository
+from schemas.ContaSchema import ContaInsertRequest, ContaUpdateRequest, ContaDeleteRequest, ContaResponse
+
 
 # extrair para .env, não seria exatamente necessário neste caso.
 SECRET_KEY = 'sua_chave_secreta'
@@ -65,14 +69,14 @@ def cadastrarUsuario(request: UsuarioInsertRequest, db: Session = Depends(get_db
     return UsuarioResponse.model_validate(usuario)
 
 
-@app.post("/usuarios/editarUsuario/", status_code=status.HTTP_201_CREATED)
+@app.patch("/usuarios/editarUsuario/", status_code=status.HTTP_201_CREATED)
 def editarUsuario(request: UsuarioUpdateRequest, db: Session = Depends(get_db)):
     usuario = UsuarioRepository.update(
         db, UsuarioModel(**request.model_dump()))
     return UsuarioResponse.model_validate(usuario)
 
 
-@app.post("/usuarios/deletarUsuario/", status_code=status.HTTP_202_ACCEPTED)
+@app.delete("/usuarios/deletarUsuario/", status_code=status.HTTP_202_ACCEPTED)
 def deletarUsuario(request: UsuarioDeleteRequest, db: Session = Depends(get_db)):
     usuario = UsuarioRepository.exists_by_id(db, request.id)
     if usuario:
@@ -83,14 +87,16 @@ def deletarUsuario(request: UsuarioDeleteRequest, db: Session = Depends(get_db))
     # Extrair if else em lambdas
 
 
-@app.post("/usuarios/testarToken")
-def testarToken(request: AuthRequest):
-    return jwt.decode(request.token, SECRET_KEY, algorithms=["HS256"])
+# @app.post("/contas/cadastrarConta/", status_code=status.HTTP_201_CREATED)
+# def cadastrarConta(request: ContaInsertRequest, db: Session = Depends(get_db)):
+#     conta = ContaRepository.insert(
+#         db, ContaModel(**request.model_dump()))
+#     return ContaResponse.model_validate(conta)
 
 
-def create_jwt_token(user_id):
+def create_jwt_token():
     payload = {
-        "sub": user_id,
+        # "sub": user_id,
         "exp": datetime.utcnow() + timedelta(hours=0.5)
     }
     token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
