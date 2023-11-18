@@ -11,5 +11,5 @@ class ContaModel(Base):
     valor: float = Column(Float, nullable=False)
     descricao: str = Column(Text, nullable=False)
 
-    usuario_id: int = Column(Integer, ForeignKey('usuarios.id'), nullable=False)
-    usuario: UsuarioModel = relationship("UsuarioModel", back_populates="contas")
+    # usuario_id: int = Column(Integer, ForeignKey('usuarios.id'), nullable=False)
+    # usuario: UsuarioModel = relationship("UsuarioModel", back_populates="contas")

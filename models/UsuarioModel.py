@@ -12,4 +12,4 @@ class UsuarioModel(Base):
     senha: str = Column(Text, nullable=False)
     valor: float = Column(Float, nullable=False)
     foto: str = Column(Text, nullable=False)
-    contas = relationship("ContaModel", back_populates="usuario")
+    # contas = relationship("ContaModel", back_populates="usuario")

@@ -94,9 +94,9 @@ def deletarUsuario(request: UsuarioDeleteRequest, db: Session = Depends(get_db))
 #     return ContaResponse.model_validate(conta)
 
 
-def create_jwt_token():
+def create_jwt_token(user_id):
     payload = {
-        # "sub": user_id,
+        "sub": user_id,
         "exp": datetime.utcnow() + timedelta(hours=0.5)
     }
     token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
