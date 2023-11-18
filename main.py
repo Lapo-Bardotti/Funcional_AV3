@@ -14,7 +14,7 @@ from repositories.UsuarioRepository import UsuarioRepository
 from schemas.UsuarioSchema import UsuarioAuthRequest, UsuarioInsertRequest, UsuarioUpdateRequest, UsuarioDeleteRequest, UsuarioResponse
 
 from repositories.ContaRepository import ContaRepository
-from schemas.ContaSchema import ContaInsertRequest, ContaUpdateRequest, ContaDeleteRequest, ContaResponse
+from schemas.ContaSchema import ContasListAllRequest, ContaInsertRequest, ContaUpdateRequest, ContaDeleteRequest, ContaResponse
 
 
 # extrair para .env, não seria exatamente necessário neste caso.
@@ -41,10 +41,10 @@ async def modify_request_response_middleware(request: Request, call_next):
             response = await call_next(request)
         except jwt.ExpiredSignatureError:
             response = JSONResponse(
-                content={"detail": "Token expirado"}, status_code=401)
+                content={"detail": "Token expirado"}, status_code=403)
         except jwt.InvalidTokenError:
             response = JSONResponse(
-                content={"detail": "Token inválido"}, status_code=401)
+                content={"detail": "Token inválido"}, status_code=403)
 
     return response
 
@@ -52,13 +52,16 @@ async def modify_request_response_middleware(request: Request, call_next):
 @app.post("/usuarios/autenticar/", status_code=status.HTTP_200_OK)
 def autenticar(request: UsuarioAuthRequest, db: Session = Depends(get_db)):
     usuario = UsuarioRepository.find_by_cpf(db, request.cpf)
-    usuarioResponse = UsuarioResponse.model_validate(usuario)
-    if usuarioResponse:
-        response_data = {
-            "usuario": usuarioResponse,
-            "token": create_jwt_token(usuario.id)
-        }
-        return response_data
+    if usuario and usuario.senha == request.senha:
+        usuarioResponse = UsuarioResponse.model_validate(usuario)
+        if usuarioResponse:
+            response_data = {
+                "usuario": usuarioResponse,
+                "token": create_jwt_token(usuario.id)
+            }
+            return response_data
+    return "Usuário ou senha inválido."
+
     # Lambda que verifica se tem usuario e retorna a response_data
 
 
@@ -87,11 +90,36 @@ def deletarUsuario(request: UsuarioDeleteRequest, db: Session = Depends(get_db))
     # Extrair if else em lambdas
 
 
-# @app.post("/contas/cadastrarConta/", status_code=status.HTTP_201_CREATED)
-# def cadastrarConta(request: ContaInsertRequest, db: Session = Depends(get_db)):
-#     conta = ContaRepository.insert(
-#         db, ContaModel(**request.model_dump()))
-#     return ContaResponse.model_validate(conta)
+@app.post("/contas/cadastrarConta/", status_code=status.HTTP_201_CREATED)
+def cadastrarConta(request: ContaInsertRequest, db: Session = Depends(get_db)):
+    conta = ContaRepository.insert(
+        db, ContaModel(**request.model_dump()))
+    return ContaResponse.model_validate(conta)
+
+
+@app.post("/contas/listarContas/", status_code=status.HTTP_201_CREATED)
+def listarContas(request: ContasListAllRequest, db: Session = Depends(get_db)):
+    contas = ContaRepository.find_all_by_user(db, request.usuario_id)
+    contas_validadas = [ContaResponse.model_validate(
+        conta) for conta in contas]
+    return contas_validadas
+
+
+@app.patch("/contas/editarConta/", status_code=status.HTTP_201_CREATED)
+def editarConta(request: ContaUpdateRequest, db: Session = Depends(get_db)):
+    conta = ContaRepository.update(
+        db, ContaModel(**request.model_dump()))
+    return ContaResponse.model_validate(conta)
+
+
+@app.delete("/contas/deletarConta/", status_code=status.HTTP_202_ACCEPTED)
+def deletarConta(request: ContaDeleteRequest, db: Session = Depends(get_db)):
+    conta = ContaRepository.exists_by_id(db, request.id)
+    if conta:
+        ContaRepository.delete_by_id(db, request.id)
+        return "conta deletada."
+    else:
+        return "conta nao encontrado."
 
 
 def create_jwt_token(user_id):

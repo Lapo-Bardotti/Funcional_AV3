@@ -1,3 +1,4 @@
+from datetime import date
 from pydantic import BaseModel
 
 
@@ -5,10 +6,16 @@ class ContaBase(BaseModel):
     ...
 
 
+class ContasListAllRequest(ContaBase):
+    usuario_id: int
+
+
 class ContaInsertRequest(ContaBase):
     tipo: str
     valor: float
     descricao: str
+    data_conta: date
+    usuario_id: int
 
 
 class ContaUpdateRequest(ContaBase):
@@ -16,6 +23,8 @@ class ContaUpdateRequest(ContaBase):
     tipo: str
     valor: float
     descricao: str
+    data_conta: date
+    usuario_id: int
 
 
 class ContaDeleteRequest(ContaBase):
@@ -27,6 +36,8 @@ class ContaResponse(ContaBase):
     tipo: str
     valor: float
     descricao: str
+    data_conta: date
+    usuario_id: int
 
     class Config:
         from_attributes = True

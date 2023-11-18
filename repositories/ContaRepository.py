@@ -9,6 +9,10 @@ class ContaRepository:
         return db.query(ContaModel).all()
 
     @staticmethod
+    def find_all_by_user(db: Session, id: int) -> list[ContaModel]:
+        return db.query(ContaModel).filter(ContaModel.usuario_id == id)
+
+    @staticmethod
     def insert(db: Session, conta: ContaModel) -> ContaModel:
         db.add(conta)
         db.commit()
