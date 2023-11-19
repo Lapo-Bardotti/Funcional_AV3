@@ -1,0 +1,7 @@
+HOF OK
+lambda recursiva
+currying OK
+ls comprehension
+dicionario OK
+filter, map ou reduce OK
+monad

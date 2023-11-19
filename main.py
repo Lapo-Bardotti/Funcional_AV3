@@ -1,5 +1,6 @@
 import jwt
 from datetime import datetime, timedelta
+from cpf import verificarCPF
 
 from fastapi import FastAPI, Depends, status, Request
 from fastapi.responses import JSONResponse
@@ -21,6 +22,8 @@ from schemas.ContaSchema import ContasListAllRequest, ContaInsertRequest, ContaU
 SECRET_KEY = 'sua_chave_secreta'
 
 Base.metadata.create_all(bind=engine)
+cpf_valido = lambda cpf: verificarCPF(cpf)
+
 
 app = FastAPI()
 
@@ -51,29 +54,28 @@ async def modify_request_response_middleware(request: Request, call_next):
 
 @app.post("/usuarios/autenticar/", status_code=status.HTTP_200_OK)
 def autenticar(request: UsuarioAuthRequest, db: Session = Depends(get_db)):
-    usuario = UsuarioRepository.find_by_cpf(db, request.cpf)
+    find_by_cpf = lambda db: lambda req: UsuarioRepository.find_by_cpf(db, req.cpf) # currying
+    usuario = find_by_cpf(db)(request) # currying
     if usuario and usuario.senha == request.senha:
         usuarioResponse = UsuarioResponse.model_validate(usuario)
-        if usuarioResponse:
-            response_data = {
-                "usuario": usuarioResponse,
-                "token": create_jwt_token(usuario.id)
-            }
-            return response_data
+        response_data = {
+            "usuario": usuarioResponse,
+            "token": create_jwt_token(usuario.id)
+        }
+        return response_data if usuarioResponse else None # if ternário
     return "Usuário ou senha inválido."
 
     # Lambda que verifica se tem usuario e retorna a response_data
 
-
 @app.post("/usuarios/cadastrarUsuario/", status_code=status.HTTP_201_CREATED)
 def cadastrarUsuario(request: UsuarioInsertRequest, db: Session = Depends(get_db)):
-    usuario = UsuarioRepository.insert(
-        db, UsuarioModel(**request.model_dump()))
-    return UsuarioResponse.model_validate(usuario)
+    insert = lambda db: lambda fn: UsuarioRepository.insert(db, fn(**request.model_dump())) # HOF (high order function)
+    return UsuarioResponse.model_validate(insert(db)(UsuarioModel)) if cpf_valido(request.cpf) else "Objeto inválido."
 
 
 @app.patch("/usuarios/editarUsuario/", status_code=status.HTTP_201_CREATED)
 def editarUsuario(request: UsuarioUpdateRequest, db: Session = Depends(get_db)):
+
     usuario = UsuarioRepository.update(
         db, UsuarioModel(**request.model_dump()))
     return UsuarioResponse.model_validate(usuario)
