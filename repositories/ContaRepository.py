@@ -12,16 +12,6 @@ class ContaRepository:
         return db.query(ContaModel).all()
 
     @staticmethod
-    def find_all_by_user_date(db: Session, conta: ContaModel) -> list[ContaModel]:
-        if conta.data_conta is None:
-            return db.query(ContaModel).filter(ContaModel.usuario_id == conta.usuario_id).all()
-        else:
-            return db.query(ContaModel).filter(and_(
-                ContaModel.usuario_id == conta.usuario_id,
-                ContaModel.data_conta <= conta.data_conta
-            )).all()
-
-    @staticmethod
     def insert(db: Session, conta: ContaModel) -> ContaModel:
         db.add(conta)
         db.commit()
@@ -49,13 +39,27 @@ class ContaRepository:
             db.commit()
 
     @staticmethod
+    def find_all_by_user_date(db: Session, conta: ContaModel) -> list[ContaModel]:
+        if conta.data_conta is None:
+            return db.query(ContaModel).filter(ContaModel.usuario_id == conta.usuario_id).all()
+        else:
+            return db.query(ContaModel).filter(and_(
+                ContaModel.usuario_id == conta.usuario_id,
+                ContaModel.data_conta <= conta.data_conta
+            )).all()
+
+    @staticmethod
     def consultarSaldo(db: Session, conta: ContaModel) -> float:
         saldo_usuario = db.query(UsuarioModel.saldo_conta).filter(
             UsuarioModel.id == conta.usuario_id).scalar()
 
-        somatorio_contas = db.query(func.coalesce(func.sum(ContaModel.valor), 0)).filter(
-            ContaModel.usuario_id == conta.usuario_id).scalar()
+        if conta.data_conta is None:
+            return saldo_usuario
+        else:
+            somatorio_contas_pagar = db.query(func.coalesce(func.sum(ContaModel.valor), 0)).filter(
+                and_(ContaModel.usuario_id == conta.usuario_id, ContaModel.tipo == 'p')).scalar()
 
-        diferenca = saldo_usuario - somatorio_contas
+            somatorio_contas_receber = db.query(func.coalesce(func.sum(ContaModel.valor), 0)).filter(
+                and_(ContaModel.usuario_id == conta.usuario_id, ContaModel.tipo == 'r')).scalar()
 
-        return diferenca
+            return saldo_usuario - somatorio_contas_pagar + somatorio_contas_receber

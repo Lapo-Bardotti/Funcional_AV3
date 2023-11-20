@@ -22,7 +22,7 @@ from schemas.ContaSchema import ContasListAllRequest, ContaInsertRequest, ContaU
 SECRET_KEY = 'sua_chave_secreta'
 
 Base.metadata.create_all(bind=engine)
-def cpf_valido(cpf): return verificarCPF()
+def cpf_valido(cpf): return verificarCPF(cpf)
 
 
 app = FastAPI()
