@@ -22,11 +22,9 @@ from schemas.ContaSchema import ContasListAllRequest, ContaInsertRequest, ContaU
 SECRET_KEY = 'sua_chave_secreta'
 
 Base.metadata.create_all(bind=engine)
-cpf_valido = lambda cpf: verificarCPF(cpf)
-
+cpf_valido = lambda cpf: verificarCPF()
 
 app = FastAPI()
-
 
 @app.middleware("http")
 async def modify_request_response_middleware(request: Request, call_next):
@@ -83,6 +81,7 @@ def editarUsuario(request: UsuarioUpdateRequest, db: Session = Depends(get_db)):
 
 @app.delete("/usuarios/deletarUsuario/", status_code=status.HTTP_202_ACCEPTED)
 def deletarUsuario(request: UsuarioDeleteRequest, db: Session = Depends(get_db)):
+
     usuario = UsuarioRepository.exists_by_id(db, request.id)
     if usuario:
         UsuarioRepository.delete_by_id(db, request.id)
@@ -94,6 +93,7 @@ def deletarUsuario(request: UsuarioDeleteRequest, db: Session = Depends(get_db))
 
 @app.post("/contas/cadastrarConta/", status_code=status.HTTP_201_CREATED)
 def cadastrarConta(request: ContaInsertRequest, db: Session = Depends(get_db)):
+
     conta = ContaRepository.insert(
         db, ContaModel(**request.model_dump()))
     return ContaResponse.model_validate(conta)
@@ -101,6 +101,7 @@ def cadastrarConta(request: ContaInsertRequest, db: Session = Depends(get_db)):
 
 @app.post("/contas/listarContas/", status_code=status.HTTP_201_CREATED)
 def listarContas(request: ContasListAllRequest, db: Session = Depends(get_db)):
+
     contas = ContaRepository.find_all_by_user(db, request.usuario_id)
     contas_validadas = [ContaResponse.model_validate(
         conta) for conta in contas]
@@ -109,6 +110,7 @@ def listarContas(request: ContasListAllRequest, db: Session = Depends(get_db)):
 
 @app.patch("/contas/editarConta/", status_code=status.HTTP_201_CREATED)
 def editarConta(request: ContaUpdateRequest, db: Session = Depends(get_db)):
+
     conta = ContaRepository.update(
         db, ContaModel(**request.model_dump()))
     return ContaResponse.model_validate(conta)
@@ -116,6 +118,7 @@ def editarConta(request: ContaUpdateRequest, db: Session = Depends(get_db)):
 
 @app.delete("/contas/deletarConta/", status_code=status.HTTP_202_ACCEPTED)
 def deletarConta(request: ContaDeleteRequest, db: Session = Depends(get_db)):
+
     conta = ContaRepository.exists_by_id(db, request.id)
     if conta:
         ContaRepository.delete_by_id(db, request.id)
@@ -125,6 +128,7 @@ def deletarConta(request: ContaDeleteRequest, db: Session = Depends(get_db)):
 
 
 def create_jwt_token(user_id):
+    
     payload = {
         "sub": user_id,
         "exp": datetime.utcnow() + timedelta(hours=0.5)
