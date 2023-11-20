@@ -57,9 +57,11 @@ class ContaRepository:
             return saldo_usuario
         else:
             somatorio_contas_pagar = db.query(func.coalesce(func.sum(ContaModel.valor), 0)).filter(
-                and_(ContaModel.usuario_id == conta.usuario_id, ContaModel.tipo == 'p')).scalar()
+                and_(and_(ContaModel.usuario_id == conta.usuario_id, ContaModel.tipo == 'p'),
+                     ContaModel.data_conta <= conta.data_conta)).scalar()
 
             somatorio_contas_receber = db.query(func.coalesce(func.sum(ContaModel.valor), 0)).filter(
-                and_(ContaModel.usuario_id == conta.usuario_id, ContaModel.tipo == 'r')).scalar()
+                and_(and_(ContaModel.usuario_id == conta.usuario_id, ContaModel.tipo == 'r'),
+                     ContaModel.data_conta <= conta.data_conta)).scalar()
 
             return saldo_usuario - somatorio_contas_pagar + somatorio_contas_receber
