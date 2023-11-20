@@ -1,6 +1,9 @@
+from operator import and_
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from models.ContaModel import ContaModel
+from models.UsuarioModel import UsuarioModel
 
 
 class ContaRepository:
@@ -9,8 +12,14 @@ class ContaRepository:
         return db.query(ContaModel).all()
 
     @staticmethod
-    def find_all_by_user(db: Session, id: int) -> list[ContaModel]:
-        return db.query(ContaModel).filter(ContaModel.usuario_id == id)
+    def find_all_by_user_date(db: Session, conta: ContaModel) -> list[ContaModel]:
+        if conta.data_conta is None:
+            return db.query(ContaModel).filter(ContaModel.usuario_id == conta.usuario_id).all()
+        else:
+            return db.query(ContaModel).filter(and_(
+                ContaModel.usuario_id == conta.usuario_id,
+                ContaModel.data_conta <= conta.data_conta
+            )).all()
 
     @staticmethod
     def insert(db: Session, conta: ContaModel) -> ContaModel:
@@ -38,3 +47,15 @@ class ContaRepository:
         if conta is not None:
             db.delete(conta)
             db.commit()
+
+    @staticmethod
+    def consultarSaldo(db: Session, conta: ContaModel) -> float:
+        saldo_usuario = db.query(UsuarioModel.saldo_conta).filter(
+            UsuarioModel.id == conta.usuario_id).scalar()
+
+        somatorio_contas = db.query(func.coalesce(func.sum(ContaModel.valor), 0)).filter(
+            ContaModel.usuario_id == conta.usuario_id).scalar()
+
+        diferenca = saldo_usuario - somatorio_contas
+
+        return diferenca

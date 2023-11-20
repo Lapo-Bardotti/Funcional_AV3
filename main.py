@@ -22,9 +22,11 @@ from schemas.ContaSchema import ContasListAllRequest, ContaInsertRequest, ContaU
 SECRET_KEY = 'sua_chave_secreta'
 
 Base.metadata.create_all(bind=engine)
-cpf_valido = lambda cpf: verificarCPF()
+def cpf_valido(cpf): return verificarCPF()
+
 
 app = FastAPI()
+
 
 @app.middleware("http")
 async def modify_request_response_middleware(request: Request, call_next):
@@ -52,22 +54,25 @@ async def modify_request_response_middleware(request: Request, call_next):
 
 @app.post("/usuarios/autenticar/", status_code=status.HTTP_200_OK)
 def autenticar(request: UsuarioAuthRequest, db: Session = Depends(get_db)):
-    find_by_cpf = lambda db: lambda req: UsuarioRepository.find_by_cpf(db, req.cpf) # currying
-    usuario = find_by_cpf(db)(request) # currying
+    def find_by_cpf(db): return lambda req: UsuarioRepository.find_by_cpf(
+        db, req.cpf)  # currying
+    usuario = find_by_cpf(db)(request)  # currying
     if usuario and usuario.senha == request.senha:
         usuarioResponse = UsuarioResponse.model_validate(usuario)
         response_data = {
             "usuario": usuarioResponse,
             "token": create_jwt_token(usuario.id)
         }
-        return response_data if usuarioResponse else None # if ternário
+        return response_data if usuarioResponse else None  # if ternário
     return "Usuário ou senha inválido."
 
     # Lambda que verifica se tem usuario e retorna a response_data
 
+
 @app.post("/usuarios/cadastrarUsuario/", status_code=status.HTTP_201_CREATED)
 def cadastrarUsuario(request: UsuarioInsertRequest, db: Session = Depends(get_db)):
-    insert = lambda db: lambda fn: UsuarioRepository.insert(db, fn(**request.model_dump())) # HOF (high order function)
+    def insert(db): return lambda fn: UsuarioRepository.insert(
+        db, fn(**request.model_dump()))  # HOF (high order function)
     return UsuarioResponse.model_validate(insert(db)(UsuarioModel)) if cpf_valido(request.cpf) else "Objeto inválido."
 
 
@@ -93,16 +98,21 @@ def deletarUsuario(request: UsuarioDeleteRequest, db: Session = Depends(get_db))
 
 @app.post("/contas/cadastrarConta/", status_code=status.HTTP_201_CREATED)
 def cadastrarConta(request: ContaInsertRequest, db: Session = Depends(get_db)):
-
     conta = ContaRepository.insert(
         db, ContaModel(**request.model_dump()))
     return ContaResponse.model_validate(conta)
 
 
+@app.post("/contas/consultarSaldo/", status_code=status.HTTP_200_OK)
+def consultarSaldo(request: ContasListAllRequest, db: Session = Depends(get_db)):
+    return ContaRepository.consultarSaldo(
+        db, ContaModel(**request.model_dump()))
+
+
 @app.post("/contas/listarContas/", status_code=status.HTTP_201_CREATED)
 def listarContas(request: ContasListAllRequest, db: Session = Depends(get_db)):
-
-    contas = ContaRepository.find_all_by_user(db, request.usuario_id)
+    contas = ContaRepository.find_all_by_user_date(
+        db, ContaModel(**request.model_dump()))
     contas_validadas = [ContaResponse.model_validate(
         conta) for conta in contas]
     return contas_validadas
@@ -128,7 +138,7 @@ def deletarConta(request: ContaDeleteRequest, db: Session = Depends(get_db)):
 
 
 def create_jwt_token(user_id):
-    
+
     payload = {
         "sub": user_id,
         "exp": datetime.utcnow() + timedelta(hours=0.5)
