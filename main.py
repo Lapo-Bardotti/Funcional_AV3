@@ -90,6 +90,12 @@ def deletarUsuario(request: UsuarioDeleteRequest, db: Session = Depends(get_db))
         return "usuario nao encontrado."
     # Extrair if else em lambdas
 
+@app.post("/contas/consultarSaldo/", status_code=status.HTTP_200_OK)
+def consultarSaldo(request: ContasListAllRequest, db: Session = Depends(get_db)):
+    return ContaRepository.consultarSaldo(
+        db, ContaModel(**request.model_dump()))
+
+
 
 @app.post("/contas/cadastrarConta/", status_code=status.HTTP_201_CREATED)
 def cadastrarConta(request: ContaInsertRequest, db: Session = Depends(get_db)):
@@ -102,7 +108,7 @@ def cadastrarConta(request: ContaInsertRequest, db: Session = Depends(get_db)):
 @app.post("/contas/listarContas/", status_code=status.HTTP_201_CREATED)
 def listarContas(request: ContasListAllRequest, db: Session = Depends(get_db)):
 
-    contas = ContaRepository.find_all_by_user(db, request.usuario_id)
+    contas = ContaRepository.find_all_by_user_date(db, ContaModel(**request.model_dump()))
     contas_validadas = [ContaResponse.model_validate(
         conta) for conta in contas]
     return contas_validadas
