@@ -1,6 +1,6 @@
 def verificarCPF(cpf: str) -> bool:
     if not cpf and not len(cpf) == 11:
-        print("Por favor, insira o CPF válido.")
+        print("Por favor, insira um CPF válido.")
         return False
     array = list(cpf)
     aux = 0
@@ -26,4 +26,4 @@ def verificarCPF(cpf: str) -> bool:
 
     return int(array[9]) == digver and int(array[10]) == digver2
 
-# print(verificarCPF("01587063310"))
+# print(verificarCPF(""))
