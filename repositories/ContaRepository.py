@@ -1,15 +1,16 @@
-from operator import and_
-from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from models.ContaModel import ContaModel
-from models.UsuarioModel import UsuarioModel
 
 
 class ContaRepository:
     @staticmethod
     def find_all(db: Session) -> list[ContaModel]:
         return db.query(ContaModel).all()
+
+    @staticmethod
+    def find_all_by_user(db: Session, id: int) -> list[ContaModel]:
+        return db.query(ContaModel).filter(ContaModel.usuario_id == id)
 
     @staticmethod
     def insert(db: Session, conta: ContaModel) -> ContaModel:
