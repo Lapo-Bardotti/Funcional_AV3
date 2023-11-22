@@ -54,7 +54,7 @@ async def modify_request_response_middleware(request: Request, call_next):
 def autenticar(request: UsuarioAuthRequest, db: Session = Depends(get_db)):
     find_by_cpf = lambda db: lambda req: UsuarioRepository.find_by_cpf(db, req.cpf) # currying
     usuario = find_by_cpf(db)(request) # currying
-    if usuario and usuario.senha == request.senha:
+    if usuario and usuario.senha == request.senha and cpf_valido(request.cpf):
         usuarioResponse = UsuarioResponse.model_validate(usuario)
         response_data = {
             "usuario": usuarioResponse,
@@ -68,32 +68,25 @@ def autenticar(request: UsuarioAuthRequest, db: Session = Depends(get_db)):
 @app.post("/usuarios/cadastrarUsuario/", status_code=status.HTTP_201_CREATED)
 def cadastrarUsuario(request: UsuarioInsertRequest, db: Session = Depends(get_db)):
     insert = lambda db: lambda fn: UsuarioRepository.insert(db, fn(**request.model_dump())) # HOF (high order function)
-    return UsuarioResponse.model_validate(insert(db)(UsuarioModel)) if cpf_valido(request.cpf) else "Objeto inválido."
+    return UsuarioResponse.model_validate(insert(db)(UsuarioModel)) if cpf_valido(request.cpf) else None
 
 
 @app.patch("/usuarios/editarUsuario/", status_code=status.HTTP_201_CREATED)
 def editarUsuario(request: UsuarioUpdateRequest, db: Session = Depends(get_db)):
-
-    usuario = UsuarioRepository.update(
-        db, UsuarioModel(**request.model_dump()))
-    return UsuarioResponse.model_validate(usuario)
+    update = lambda db, model: UsuarioRepository.update(db, model)
+    return UsuarioResponse.model_validate(update(db, UsuarioModel(**request.model_dump())))
 
 
 @app.delete("/usuarios/deletarUsuario/", status_code=status.HTTP_202_ACCEPTED)
 def deletarUsuario(request: UsuarioDeleteRequest, db: Session = Depends(get_db)):
-
     usuario = UsuarioRepository.exists_by_id(db, request.id)
-    if usuario:
-        UsuarioRepository.delete_by_id(db, request.id)
-        return "usuario deletado."
-    else:
-        return "usuario nao encontrado."
+    delete_by_id = lambda db, req: UsuarioRepository.delete_by_id(db, req.id)
+    return delete_by_id(db, request) if usuario else {"msg": "Usuário não encontrado."}
     # Extrair if else em lambdas
 
 @app.post("/contas/consultarSaldo/", status_code=status.HTTP_200_OK)
 def consultarSaldo(request: ContasListAllRequest, db: Session = Depends(get_db)):
-    return ContaRepository.consultarSaldo(
-        db, ContaModel(**request.model_dump()))
+    return ContaRepository.consultarSaldo(db, ContaModel(**request.model_dump()))
 
 
 
@@ -107,19 +100,16 @@ def cadastrarConta(request: ContaInsertRequest, db: Session = Depends(get_db)):
 
 @app.post("/contas/listarContas/", status_code=status.HTTP_201_CREATED)
 def listarContas(request: ContasListAllRequest, db: Session = Depends(get_db)):
-
     contas = ContaRepository.find_all_by_user_date(db, ContaModel(**request.model_dump()))
-    contas_validadas = [ContaResponse.model_validate(
-        conta) for conta in contas]
-    return contas_validadas
+    contas_validadas = lambda contas : [ContaResponse.model_validate(conta) for conta in contas] # list comprehension
+    return contas_validadas(contas)
 
 
 @app.patch("/contas/editarConta/", status_code=status.HTTP_201_CREATED)
 def editarConta(request: ContaUpdateRequest, db: Session = Depends(get_db)):
 
-    conta = ContaRepository.update(
-        db, ContaModel(**request.model_dump()))
-    return ContaResponse.model_validate(conta)
+    conta = lambda: ContaRepository.update(db, ContaModel(**request.model_dump()))
+    return ContaResponse.model_validate(conta())
 
 
 @app.delete("/contas/deletarConta/", status_code=status.HTTP_202_ACCEPTED)
