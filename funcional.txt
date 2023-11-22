@@ -1,7 +1,7 @@
 HOF OK
 lambda recursiva
 currying OK
-ls comprehension
+ls comprehension OK
 dicionario OK
 filter, map ou reduce OK
 monad
