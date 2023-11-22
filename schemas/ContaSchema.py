@@ -8,7 +8,8 @@ class ContaBase(BaseModel):
 
 class ContasListAllRequest(ContaBase):
     usuario_id: int
-    data_usuario: date = None
+    data_conta: date = None
+
 
 class ContaInsertRequest(ContaBase):
     tipo: str
