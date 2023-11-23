@@ -16,6 +16,8 @@ class ContaInsertRequest(ContaBase):
     descricao: str
     data_conta: date
     usuario_id: int
+    status_pagamento: str
+    forma_pagamento: str
 
 
 class ContaUpdateRequest(ContaBase):
@@ -25,7 +27,8 @@ class ContaUpdateRequest(ContaBase):
     descricao: str
     data_conta: date
     usuario_id: int
-
+    status_pagamento: str
+    forma_pagamento: str
 
 class ContaDeleteRequest(ContaBase):
     id: int
@@ -38,6 +41,8 @@ class ContaResponse(ContaBase):
     descricao: str
     data_conta: date
     usuario_id: int
+    status_pagamento: str
+    forma_pagamento: str
 
     class Config:
         from_attributes = True
