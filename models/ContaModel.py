@@ -14,8 +14,8 @@ class ContaModel(Base):
     valor: float = Column(Float, nullable=False)
     descricao: str = Column(Text, nullable=False)
     data_conta: date = Column(TIMESTAMP(timezone=True), nullable=False)
-    criado_em = Column(TIMESTAMP(timezone=True),
-                       nullable=False, server_default=text('now()'))
-
+    criado_em = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    status_pagamento = Column(String(10), nullable=False)
+    forma_pagamento = Column(String(10), nullable=False)
     usuario_id = Column(Integer, ForeignKey('usuarios.id'))
     usuario = relationship("UsuarioModel")
